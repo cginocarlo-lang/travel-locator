@@ -3,18 +3,8 @@ import { findEmployee, sheetsClient } from './_sheets.js';
 const MAX_LEN = 45;
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
-// Stops text from being evaluated as a formula (the leading ' is not stored in the cell)
-function safeText(v) {
-  const s = String(v ?? '').trim();
-  return /^[=+\-@]/.test(s) ? "'" + s : s;
-}
-
-// Current Philippine time as "yyyy-mm-dd hh:mm:ss"
-function nowManila() {
-  return new Date(Date.now() + MANILA_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ');
-}
-
-// Google Sheets serial number for a yyyy-mm-dd string (no timezone drift).
+// Returns a day number for a yyyy-mm-dd string, or null if it isn't a real date.
+// Used only to validate the dates and compare their order.
 function dateToSerial(str) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str || ''));
   if (!m) return null;
@@ -25,9 +15,15 @@ function dateToSerial(str) {
   return Math.round(utc / 86400000) + 25569;
 }
 
-// Current date-time as a serial number in Philippine time (UTC+8).
-function nowSerialManila() {
-  return (Date.now() + MANILA_OFFSET_MS) / 86400000 + 25569;
+// Stops text from being evaluated as a formula (the leading ' is not stored in the cell).
+function safeText(v) {
+  const s = String(v ?? '').trim();
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+
+// Current Philippine time as "yyyy-mm-dd hh:mm:ss".
+function nowManila() {
+  return new Date(Date.now() + MANILA_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ');
 }
 
 export default async function handler(req, res) {
@@ -69,28 +65,30 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Employee ID could not be verified. Please re-enter it and try again.' });
     }
 
-    // RAW stores values exactly as given, so text like "=HYPERLINK(...)" is never evaluated as a formula.
-await sheetsClient().spreadsheets.values.append({
-  spreadsheetId: process.env.SHEET_ID,
-  range: 'Log!A:H',
-  valueInputOption: 'USER_ENTERED',
-  insertDataOption: 'INSERT_ROWS',
-  requestBody: {
-    values: [[
-      nowManila(),
-      "'" + employee.employeeId,        // keeps IDs as text, so leading zeros survive
-      safeText(employee.fullName),
-      safeText(employee.designation),
-      safeText(activity),
-      safeText(venue),
-      String(body.startTravel),         // yyyy-mm-dd, validated above
-      String(body.endTravel),
-    ]],
-  },
-});
+    // USER_ENTERED lets Sheets turn the date text into real dates.
+    // safeText() prevents free-text fields from being evaluated as formulas.
+    await sheetsClient().spreadsheets.values.append({
+      spreadsheetId: process.env.SHEET_ID,
+      range: 'Log!A:H',
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: {
+        values: [[
+          nowManila(),                       // A: Timestamp
+          "'" + employee.employeeId,         // B: Employee ID (kept as text, leading zeros survive)
+          safeText(employee.fullName),       // C: Full Name
+          safeText(employee.designation),    // D: Designation
+          safeText(activity),                // E: Activity
+          safeText(venue),                   // F: Venue
+          String(body.startTravel),          // G: Start of Travel (yyyy-mm-dd)
+          String(body.endTravel),            // H: End of Travel (yyyy-mm-dd)
+        ]],
+      },
+    });
 
     return res.status(200).json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, message: 'DEBUG: ' + (err.message || err) });
+    console.error('submit error:', err);
+    return res.status(500).json({ success: false, message: 'Could not save your entry. Please try again.' });
   }
 }
