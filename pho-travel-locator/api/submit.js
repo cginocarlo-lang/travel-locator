@@ -3,6 +3,17 @@ import { findEmployee, sheetsClient } from './_sheets.js';
 const MAX_LEN = 45;
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
+// Stops text from being evaluated as a formula (the leading ' is not stored in the cell)
+function safeText(v) {
+  const s = String(v ?? '').trim();
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+
+// Current Philippine time as "yyyy-mm-dd hh:mm:ss"
+function nowManila() {
+  return new Date(Date.now() + MANILA_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ');
+}
+
 // Google Sheets serial number for a yyyy-mm-dd string (no timezone drift).
 function dateToSerial(str) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str || ''));
@@ -59,24 +70,24 @@ export default async function handler(req, res) {
     }
 
     // RAW stores values exactly as given, so text like "=HYPERLINK(...)" is never evaluated as a formula.
-    await sheetsClient().spreadsheets.values.append({
-      spreadsheetId: process.env.SHEET_ID,
-      range: 'Log!A:H',
-      valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        values: [[
-          nowSerialManila(),
-          employee.employeeId,
-          employee.fullName,
-          employee.designation,
-          activity,
-          venue,
-          start,
-          end,
-        ]],
-      },
-    });
+await sheetsClient().spreadsheets.values.append({
+  spreadsheetId: process.env.SHEET_ID,
+  range: 'Log!A:H',
+  valueInputOption: 'USER_ENTERED',
+  insertDataOption: 'INSERT_ROWS',
+  requestBody: {
+    values: [[
+      nowManila(),
+      "'" + employee.employeeId,        // keeps IDs as text, so leading zeros survive
+      safeText(employee.fullName),
+      safeText(employee.designation),
+      safeText(activity),
+      safeText(venue),
+      String(body.startTravel),         // yyyy-mm-dd, validated above
+      String(body.endTravel),
+    ]],
+  },
+});
 
     return res.status(200).json({ success: true });
   } catch (err) {
