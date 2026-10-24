@@ -80,7 +80,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ success: true });
   } catch (err) {
-    console.error('submit error:', err);
-    return res.status(500).json({ success: false, message: 'Could not save your entry. Please try again.' });
+    return res.status(500).json({ success: false, message: 'DEBUG: ' + (err.message || err) });
   }
 }
