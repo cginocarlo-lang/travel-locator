@@ -20,7 +20,6 @@ export function sheetsClient() {
   return cachedClient;
 }
 
-// Looks up an employee in the "Employees" sheet (A: ID, B: Full Name, C: Designation).
 export async function findEmployee(employeeId) {
   const wanted = String(employeeId || '').trim().toLowerCase();
   if (!wanted) return { success: false, message: 'Employee ID is required.' };
