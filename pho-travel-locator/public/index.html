@@ -80,7 +80,7 @@
     .form-control:read-only { background-color: #f8f9fa; color: #6c757d; }
     .btn-green { background-color: #007f4e; color: white; font-weight: 600; border: none; padding: 12px; transition: background-color 0.2s ease; }
     .btn-green:hover { background-color: #005c38; color: white; }
-    .char-counter { text-align: right; color: #6c757d; }
+    .char-counter { text-align: right; color: #6c757d; font-size: 0.8rem; line-height: 1; }
     .char-counter.text-warning { color: #c98a00 !important; }
     .char-counter.text-danger { color: #d33 !important; }
   </style>
@@ -146,17 +146,21 @@
                 <input type="text" id="designation" name="designation" required readonly class="form-control" placeholder="Please Enter Employee ID Above">
               </div>
 
-              <div class="mb-3">
-                <label class="form-label small" for="activity">Name of Activity</label>
-                <input type="text" id="activity" name="activity" required maxlength="45" class="form-control" placeholder="e.g. FHSIS MOP Orientation">
-                <div class="form-text small char-counter"><span id="activityCount">0</span>/45</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label small" for="venue">Venue / Destination</label>
-                <input type="text" id="venue" name="venue" required maxlength="45" class="form-control" placeholder="e.g. PHO Conference Room">
-                <div class="form-text small char-counter"><span id="venueCount">0</span>/45</div>
-              </div>
+            <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-baseline">
+              <label class="form-label small" for="activity">Name of Activity</label>
+              <div class="char-counter small"><span id="activityCount">0</span>/45</div>
+            </div>
+            <input type="text" id="activity" name="activity" required maxlength="45" class="form-control" placeholder="e.g. FHSIS MOP Orientation">
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-baseline">
+              <label class="form-label small" for="venue">Venue / Destination</label>
+              <div class="char-counter small"><span id="venueCount">0</span>/45</div>
+            </div>
+            <input type="text" id="venue" name="venue" required maxlength="45" class="form-control" placeholder="e.g. PHO Conference Room">
+          </div>
 
               <div class="row g-3 mb-4">
                 <div class="col-12 col-sm-6">
