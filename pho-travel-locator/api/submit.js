@@ -3,8 +3,6 @@ import { findEmployee, sheetsClient } from './_sheets.js';
 const MAX_LEN = 45;
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
-// Returns a day number for a yyyy-mm-dd string, or null if it isn't a real date.
-// Used only to validate the dates and compare their order.
 function dateToSerial(str) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str || ''));
   if (!m) return null;
@@ -15,13 +13,11 @@ function dateToSerial(str) {
   return Math.round(utc / 86400000) + 25569;
 }
 
-// Stops text from being evaluated as a formula (the leading ' is not stored in the cell).
 function safeText(v) {
   const s = String(v ?? '').trim();
   return /^[=+\-@]/.test(s) ? "'" + s : s;
 }
 
-// Current Philippine time as "yyyy-mm-dd hh:mm:ss".
 function nowManila() {
   return new Date(Date.now() + MANILA_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ');
 }
@@ -59,14 +55,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'End of Travel cannot be earlier than Start of Travel.' });
     }
 
-    // Re-verify on the server; never trust the name/designation sent by the browser
     const employee = await findEmployee(employeeId);
     if (!employee.success) {
       return res.status(400).json({ success: false, message: 'Employee ID could not be verified. Please re-enter it and try again.' });
     }
 
-    // USER_ENTERED lets Sheets turn the date text into real dates.
-    // safeText() prevents free-text fields from being evaluated as formulas.
     await sheetsClient().spreadsheets.values.append({
       spreadsheetId: process.env.SHEET_ID,
       range: 'Log!A:H',
