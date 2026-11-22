@@ -14,7 +14,6 @@ export default async function handler(req, res) {
 
   try {
     const result = await findEmployee(id);
-    // Only return what the form needs
     return res.status(200).json(
       result.success
         ? { success: true, fullName: result.fullName, designation: result.designation }
